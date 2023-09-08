@@ -7,11 +7,13 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Nexmo\Laravel\Facade\Nexmo;
 use Twilio\Rest\Client;
+use Illuminate\Support\Facades\Http;
 
 class SMS_module
 {
     public static function send($receiver, $otp)
     {
+       
         $config = self::get_settings('twilio_sms');
         if (isset($config) && $config['status'] == 1) {
             $response = self::twilio($receiver, $otp);
@@ -36,6 +38,12 @@ class SMS_module
             return $response;
         }
 
+        $config = self::get_settings('termii_sms');
+        if (isset($config) && $config['status'] == 1) {
+            $response = self::termii($receiver, $otp);
+            return $response;
+        }
+       
         return 'not_found';
     }
 
@@ -68,6 +76,48 @@ class SMS_module
                     'status' => 0,
                     'sid' => '',
                     'token' => '',
+                    'from' => '',
+                ]),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+        return $response;
+    }
+
+    public static function termii($receiver, $otp)
+    {
+        $config = self::get_settings('termii_sms');
+        $response = 'error';
+
+        $phone_number = "+234" . preg_replace('/^\D+/', '', $receiver);
+
+        if(isset($config) && $config['status'] == 1) {
+            $message = str_replace("#OTP#", $otp, $config['otp_template']);
+            $api_key = $config['api_key'];
+            $channel = $config['channel'];
+            $from = $config['from'];
+            
+            $response = Http::post('https://api.ng.termii.com/api/sms/send', [
+                'api_key' =>  $api_key,
+                'to' => $phone_number,
+                'type' => 'plain',
+                'channel' => $channel,
+                'from' => $from,
+                'sms' => $message,
+            ]);
+
+            if($response->successful()){
+                return 'success';
+            }
+            return 'error';
+        } elseif (empty($config)) {
+            DB::table('business_settings')->updateOrInsert(['key' => 'termii_sms'], [
+                'key' => 'termii_sms',
+                'value' => json_encode([
+                    'status' => 1,
+                    'api_key' => '',
+                    'channel' => '',
                     'from' => '',
                 ]),
                 'created_at' => now(),
