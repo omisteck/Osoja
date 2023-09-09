@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Nexmo\Laravel\Facade\Nexmo;
 use Twilio\Rest\Client;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class SMS_module
 {
@@ -90,7 +91,7 @@ class SMS_module
         $config = self::get_settings('termii_sms');
         $response = 'error';
 
-        $phone_number = "+234" . preg_replace('/^\D+/', '', $receiver);
+        $phone_number = Str::startsWith($receiver, '0') ? '+234' . Str::substr($receiver, 1) : $receiver;
 
         if(isset($config) && $config['status'] == 1) {
             $message = str_replace("#OTP#", $otp, $config['otp_template']);
