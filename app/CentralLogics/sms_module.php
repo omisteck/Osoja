@@ -118,8 +118,8 @@ class SMS_module
                 'value' => json_encode([
                     'status' => 1,
                     'api_key' => '',
-                    'channel' => '',
-                    'from' => '',
+                    'channel' => 'generic',
+                    'from' => 'Osojapa',
                 ]),
                 'created_at' => now(),
                 'updated_at' => now(),
