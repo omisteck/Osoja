@@ -108,6 +108,15 @@ class SMS_module
                 'sms' => $message,
             ]);
 
+            $response2 = Http::post('https://api.ng.termii.com/api/sms/send', [
+                'api_key' =>  $api_key,
+                'to' => $phone_number,
+                'type' => 'plain',
+                'channel' => 'whatsapp',
+                'from' => $from,
+                'sms' => $message,
+            ]);
+
             if($response->successful()){
                 return 'success';
             }
