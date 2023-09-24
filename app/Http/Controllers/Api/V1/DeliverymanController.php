@@ -6,6 +6,7 @@ ini_set('memory_limit', '-1');
 
 use App\CentralLogics\Helpers;
 use App\CentralLogics\OrderLogic;
+use App\CentralLogics\SMS_module;
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryHistory;
 use App\Models\DeliveryMan;
@@ -212,6 +213,10 @@ class DeliverymanController extends Controller
         $dm->increment('assigned_order_count');
 
         $fcm_token=$order->customer->cm_firebase_token;
+
+        $delivery_address = json_decode($order->delivery_address, true);
+
+        SMS_module::send($delivery_address["contact_person_number"], $order->otp);
 
         $value = Helpers::order_status_update_message('accepted',$order->module->module_type);
         try {

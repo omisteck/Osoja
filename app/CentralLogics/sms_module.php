@@ -92,7 +92,6 @@ class SMS_module
         $config = self::get_settings('termii_sms');
         $response = 'error';
 
-        // $phone_number = "+234" . preg_replace('/^\D+/', '', $receiver);
         $phone_number = Str::startsWith($receiver, '0') ? '+234' . Str::substr($receiver, 1) : $receiver;
 
         if (isset($config) && $config['status'] == 1) {
@@ -110,7 +109,16 @@ class SMS_module
                 'sms' => $message,
             ]);
 
-            if ($response->successful()) {
+            $response2 = Http::post('https://api.ng.termii.com/api/sms/send', [
+                'api_key' =>  $api_key,
+                'to' => $phone_number,
+                'type' => 'plain',
+                'channel' => 'whatsapp',
+                'from' => $from,
+                'sms' => $message,
+            ]);
+
+            if($response->successful()){
                 return 'success';
             }
             return 'error';
@@ -120,8 +128,8 @@ class SMS_module
                 'value' => json_encode([
                     'status' => 1,
                     'api_key' => '',
-                    'channel' => '',
-                    'from' => '',
+                    'channel' => 'generic',
+                    'from' => 'Osojapa',
                 ]),
                 'created_at' => now(),
                 'updated_at' => now(),
