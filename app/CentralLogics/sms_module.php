@@ -8,12 +8,13 @@ use Illuminate\Support\Facades\DB;
 use Nexmo\Laravel\Facade\Nexmo;
 use Twilio\Rest\Client;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class SMS_module
 {
     public static function send($receiver, $otp)
     {
-       
+
         $config = self::get_settings('twilio_sms');
         if (isset($config) && $config['status'] == 1) {
             $response = self::twilio($receiver, $otp);
@@ -43,7 +44,7 @@ class SMS_module
             $response = self::termii($receiver, $otp);
             return $response;
         }
-       
+
         return 'not_found';
     }
 
@@ -59,7 +60,8 @@ class SMS_module
             try {
                 $twilio = new Client($sid, $token);
                 $twilio->messages
-                    ->create($receiver, // to
+                    ->create(
+                        $receiver, // to
                         array(
                             "messagingServiceSid" => $config['messaging_service_id'],
                             "body" => $message
@@ -90,14 +92,15 @@ class SMS_module
         $config = self::get_settings('termii_sms');
         $response = 'error';
 
-        $phone_number = "+234" . preg_replace('/^\D+/', '', $receiver);
+        // $phone_number = "+234" . preg_replace('/^\D+/', '', $receiver);
+        $phone_number = Str::startsWith($receiver, '0') ? '+234' . Str::substr($receiver, 1) : $receiver;
 
-        if(isset($config) && $config['status'] == 1) {
+        if (isset($config) && $config['status'] == 1) {
             $message = str_replace("#OTP#", $otp, $config['otp_template']);
             $api_key = $config['api_key'];
             $channel = $config['channel'];
             $from = $config['from'];
-            
+
             $response = Http::post('https://api.ng.termii.com/api/sms/send', [
                 'api_key' =>  $api_key,
                 'to' => $phone_number,
@@ -107,7 +110,7 @@ class SMS_module
                 'sms' => $message,
             ]);
 
-            if($response->successful()){
+            if ($response->successful()) {
                 return 'success';
             }
             return 'error';
