@@ -260,9 +260,9 @@ class OrderController extends Controller
                 if ($c['item_campaign_id'] != null) {
                     $product = ItemCampaign::with('module')->active()->find($c['item_campaign_id']);
                     if ($product) {
-                        if($product->module->module_type == 'food' && $product->food_variations){
+                        if ($product->module->module_type == 'food' && $product->food_variations) {
                             $product_variations = json_decode($product->food_variations, true);
-                            $variations=[];
+                            $variations = [];
                             if (count($product_variations)) {
                                 $variation_data = Helpers::get_varient($product_variations, $c['variation']);
                                 $price = $product['price'] + $variation_data['price'];
@@ -272,8 +272,8 @@ class OrderController extends Controller
                             }
                             $product->tax = $store->tax;
                             $product = Helpers::product_data_formatting($product, false, false, app()->getLocale());
-                            $addon_data = Helpers::calculate_addon_price(\App\Models\AddOn::whereIn('id',$c['add_on_ids'])->get(), $c['add_on_qtys']);
-        
+                            $addon_data = Helpers::calculate_addon_price(\App\Models\AddOn::whereIn('id', $c['add_on_ids'])->get(), $c['add_on_qtys']);
+
                             $or_d = [
                                 'item_id' => null,
                                 'item_campaign_id' => $c['item_campaign_id'],
@@ -292,9 +292,9 @@ class OrderController extends Controller
                             ];
                             $order_details[] = $or_d;
                             $total_addon_price += $or_d['total_add_on_price'];
-                            $product_price += $price*$or_d['quantity'];
-                            $store_discount_amount += $or_d['discount_on_item']*$or_d['quantity'];
-                        }else{
+                            $product_price += $price * $or_d['quantity'];
+                            $store_discount_amount += $or_d['discount_on_item'] * $or_d['quantity'];
+                        } else {
                             if (count(json_decode($product['variations'], true)) > 0) {
                                 $variant_data = Helpers::variation_price($product, json_encode($c['variation']));
                                 $price = $variant_data['price'];
@@ -311,14 +311,14 @@ class OrderController extends Controller
                                         ]
                                     ], 406);
                                 }
-    
+
                                 $product_data[] = [
                                     'item' => clone $product,
                                     'quantity' => $c['quantity'],
                                     'variant' => count($c['variation']) > 0 ? $c['variation'][0]['type'] : null
                                 ];
                             }
-    
+
                             $product->tax = $store->tax;
                             $product = Helpers::product_data_formatting($product, false, false, app()->getLocale());
                             $addon_data = Helpers::calculate_addon_price(\App\Models\AddOn::whereIn('id', $c['add_on_ids'])->get(), $c['add_on_qtys']);
@@ -465,18 +465,18 @@ class OrderController extends Controller
             $coupon_discount_amount = $coupon ? CouponLogic::get_discount($coupon, $product_price + $total_addon_price - $store_discount_amount) : 0;
             $total_price = $product_price + $total_addon_price - $store_discount_amount - $coupon_discount_amount;
 
-            $tax = ($store->tax > 0)?$store->tax:0;
+            $tax = ($store->tax > 0) ? $store->tax : 0;
             $order->tax_status = 'excluded';
-    
-            $tax_included =BusinessSetting::where(['key'=>'tax_included'])->first() ?  BusinessSetting::where(['key'=>'tax_included'])->first()->value : 0;
-            if ($tax_included ==  1){
+
+            $tax_included = BusinessSetting::where(['key' => 'tax_included'])->first() ?  BusinessSetting::where(['key' => 'tax_included'])->first()->value : 0;
+            if ($tax_included ==  1) {
                 $order->tax_status = 'included';
             }
-    
-            $total_tax_amount=Helpers::product_tax($total_price,$tax,$order->tax_status =='included');
-    
-            $tax_a=$order->tax_status =='included'?0:$total_tax_amount;
-            
+
+            $total_tax_amount = Helpers::product_tax($total_price, $tax, $order->tax_status == 'included');
+
+            $tax_a = $order->tax_status == 'included' ? 0 : $total_tax_amount;
+
             if ($store->minimum_order > $product_price + $total_addon_price) {
                 return response()->json([
                     'errors' => [
@@ -491,6 +491,14 @@ class OrderController extends Controller
                     $order->delivery_charge = 0;
                     $free_delivery_by = 'admin';
                 }
+            }
+
+            //check if is first order, if yes give free delivery
+            $orders_count_f = $request->user()->orders()->whereNotIn('order_status', ['failed', 'canceled'])->count();
+
+            if (isset($orders_count_f) && $orders_count_f < 1) {
+                $order->delivery_charge = 0;
+                $free_delivery_by = 'admin';
             }
 
             if ($store->free_delivery) {
@@ -540,7 +548,7 @@ class OrderController extends Controller
                 ]
             ], 203);
         }
-        if (isset($module_wise_delivery_charge ) && $request->payment_method == 'cash_on_delivery' && $module_wise_delivery_charge->pivot->maximum_cod_order_amount && $order->order_amount > $module_wise_delivery_charge->pivot->maximum_cod_order_amount) {
+        if (isset($module_wise_delivery_charge) && $request->payment_method == 'cash_on_delivery' && $module_wise_delivery_charge->pivot->maximum_cod_order_amount && $order->order_amount > $module_wise_delivery_charge->pivot->maximum_cod_order_amount) {
             return response()->json([
                 'errors' => [
                     ['code' => 'order_amount', 'message' => translate('messages.amount_crossed_maximum_cod_order_amount')]
@@ -697,7 +705,7 @@ class OrderController extends Controller
                 $delivery_charge = !isset($delivery_charge) ? $original_delivery_charge : $delivery_charge;
             }
         }
-        
+
 
         $zone = null;
         if ($request->latitude && $request->longitude) {
@@ -734,7 +742,7 @@ class OrderController extends Controller
                 array_push($img_names, $image_name);
             }
             $images = $img_names;
-        }else{
+        } else {
             $images = null;
         }
 
@@ -791,17 +799,17 @@ class OrderController extends Controller
         $coupon_discount_amount = $coupon ? CouponLogic::get_discount($coupon, $product_price + $total_addon_price - $store_discount_amount) : 0;
         $total_price = $product_price + $total_addon_price - $store_discount_amount - $coupon_discount_amount;
 
-        $tax = ($store->tax > 0)?$store->tax:0;
+        $tax = ($store->tax > 0) ? $store->tax : 0;
         $order->tax_status = 'excluded';
 
-        $tax_included =BusinessSetting::where(['key'=>'tax_included'])->first() ?  BusinessSetting::where(['key'=>'tax_included'])->first()->value : 0;
-        if ($tax_included ==  1){
+        $tax_included = BusinessSetting::where(['key' => 'tax_included'])->first() ?  BusinessSetting::where(['key' => 'tax_included'])->first()->value : 0;
+        if ($tax_included ==  1) {
             $order->tax_status = 'included';
         }
 
-        $total_tax_amount=Helpers::product_tax($total_price,$tax,$order->tax_status =='included');
+        $total_tax_amount = Helpers::product_tax($total_price, $tax, $order->tax_status == 'included');
 
-        $tax_a=$order->tax_status =='included'?0:$total_tax_amount;
+        $tax_a = $order->tax_status == 'included' ? 0 : $total_tax_amount;
 
         $free_delivery_over = BusinessSetting::where('key', 'free_delivery_over')->first()->value;
         if (isset($free_delivery_over)) {
@@ -938,13 +946,13 @@ class OrderController extends Controller
 
         $order = Order::with('details', 'parcel_category')->where('user_id', $request->user()->id)->find($request->order_id);
 
-        $details = isset($order->details)?$order->details:null;
+        $details = isset($order->details) ? $order->details : null;
         if ($details != null && $details->count() > 0) {
             $details = Helpers::order_details_data_formatting($details);
             return response()->json($details, 200);
         } else if ($order->order_type == 'parcel' || $order->prescription_order == 1) {
             $order->delivery_address = json_decode($order->delivery_address, true);
-            if($order->prescription_order && $order->order_attachment){
+            if ($order->prescription_order && $order->order_attachment) {
                 $order->order_attachment = json_decode($order->order_attachment, true);
             }
             return response()->json(($order), 200);
@@ -1072,6 +1080,14 @@ class OrderController extends Controller
 
             $fcm_token = $request->user()->cm_firebase_token;
             $value = Helpers::order_status_update_message('pending', $order->module->module_type);
+
+            $placeholder = [
+                'delivery_guy_name' => '',
+                'name' => $order->customer->f_name . " " . $order->customer->l_name,
+                'order_id' => $order->id,
+            ];
+
+            $value = Helpers::replace_message_placeholder($value, $placeholder);
             try {
                 if ($value) {
                     $data = [

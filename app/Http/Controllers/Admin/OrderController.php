@@ -128,7 +128,7 @@ class OrderController extends Controller
         return view('admin-views.order.list', compact('orders', 'status', 'orderstatus', 'scheduled', 'vendor_ids', 'zone_ids', 'from_date', 'to_date', 'total', 'order_type'));
     }
 
-    public function dispatch_list($module,$status, Request $request)
+    public function dispatch_list($module, $status, Request $request)
     {
         $module_id = $request->query('module_id', null);
 
@@ -140,7 +140,7 @@ class OrderController extends Controller
         Order::where(['checked' => 0])->update(['checked' => 1]);
 
         $orders = Order::with(['customer', 'store'])
-            ->whereHas('module', function($query) use($module){
+            ->whereHas('module', function ($query) use ($module) {
                 $query->where('id', $module);
             })
             ->when(isset($module_id), function ($query) use ($module_id) {
@@ -178,7 +178,7 @@ class OrderController extends Controller
         $to_date = isset($request->to_date) ? $request->to_date : null;
         $total = $orders->total();
 
-        return view('admin-views.order.distaptch_list', compact('orders','module', 'status', 'orderstatus', 'scheduled', 'vendor_ids', 'zone_ids', 'from_date', 'to_date', 'total'));
+        return view('admin-views.order.distaptch_list', compact('orders', 'module', 'status', 'orderstatus', 'scheduled', 'vendor_ids', 'zone_ids', 'from_date', 'to_date', 'total'));
     }
 
     public function details(Request $request, $id)
@@ -515,8 +515,16 @@ class OrderController extends Controller
             $deliveryman->save();
             $deliveryman->increment('assigned_order_count');
             $fcm_token = $order->customer->cm_firebase_token;
-            $value = Helpers::order_status_update_message('accepted',$order->module->module_type,$order->customer?
-            $order->customer->current_language_key:'en');
+            $value = Helpers::order_status_update_message('accepted', $order->module->module_type, $order->customer ?
+                $order->customer->current_language_key : 'en');
+
+            $placeholder = [
+                'delivery_guy_name' => $deliveryman->f_name . " " . $deliveryman->l_name,
+                'name' => $order->customer->f_name . " " . $order->customer->l_name,
+                'order_id' => $order->id,
+            ];
+
+            $value = Helpers::replace_message_placeholder($value, $placeholder);
             try {
                 if ($value) {
                     $data = [
@@ -906,11 +914,11 @@ class OrderController extends Controller
                     if ($c['item_campaign_id'] != null) {
                         $product = ItemCampaign::find($c['item_campaign_id']);
                         if ($product) {
-    
+
                             $price = $c['price'];
-    
+
                             $product = Helpers::product_data_formatting($product);
-    
+
                             $c->item_details = json_encode($product);
                             $c->updated_at = now();
                             if (isset($c->id)) {
@@ -934,7 +942,7 @@ class OrderController extends Controller
                             } else {
                                 $c->save();
                             }
-    
+
                             $total_addon_price += $c['total_add_on_price'];
                             $product_price += $price * $c['quantity'];
                             $store_discount_amount += $c['discount_on_item'] * $c['quantity'];
@@ -948,9 +956,9 @@ class OrderController extends Controller
                         $product = Item::find($c['item_id']);
                         if ($product) {
                             $price = $c['price'];
-    
+
                             $product = Helpers::product_data_formatting($product);
-    
+
                             $c->item_details = json_encode($product);
                             $c->updated_at = now();
                             if (isset($c->id)) {
@@ -974,7 +982,7 @@ class OrderController extends Controller
                             } else {
                                 $c->save();
                             }
-    
+
                             $total_addon_price += $c['total_add_on_price'];
                             $product_price += $price * $c['quantity'];
                             $store_discount_amount += $c['discount_on_item'] * $c['quantity'];

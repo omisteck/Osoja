@@ -56,13 +56,11 @@ class MercadoPagoController extends Controller
             'id' => $payment->id
         );
 
-        if($payment->error)
-        {
+        if ($payment->error) {
             $response['error'] = $payment->error->message;
         }
-        if($payment->status == 'approved')
-        {
-            $order = Order::where(['id' => $request->order_id, 'user_id'=>$request->customer_id])->first();
+        if ($payment->status == 'approved') {
+            $order = Order::where(['id' => $request->order_id, 'user_id' => $request->customer_id])->first();
             try {
                 $order->transaction_reference = $payment->id;
                 $order->payment_method = 'mercadopago';
@@ -71,36 +69,45 @@ class MercadoPagoController extends Controller
                 $order->confirmed = now();
                 $order->save();
                 $fcm_token = $order->customer->cm_firebase_token;
-                $value = Helpers::order_status_update_message('confirmed',$order->module->module_type);
+                $value = Helpers::order_status_update_message('confirmed', $order->module->module_type);
+
+                $placeholder = [
+                    'delivery_guy_name' => '',
+                    'name' => $order->customer->f_name . " " . $order->customer->l_name,
+                    'order_id' => $order->id,
+                ];
+
+                $value = Helpers::replace_message_placeholder($value, $placeholder);
+
                 if ($value) {
                     $data = [
-                        'title' =>translate('messages.order_placed_successfully'),
+                        'title' => translate('messages.order_placed_successfully'),
                         'description' => $value,
                         'order_id' => $order['id'],
                         'image' => '',
-                        'type'=>'order_status'
+                        'type' => 'order_status'
                     ];
                     Helpers::send_push_notif_to_device($fcm_token, $data);
                     DB::table('user_notifications')->insert([
-                        'data'=> json_encode($data),
-                        'user_id'=>$order->customer->id,
-                        'created_at'=>now(),
-                        'updated_at'=>now()
+                        'data' => json_encode($data),
+                        'user_id' => $order->customer->id,
+                        'created_at' => now(),
+                        'updated_at' => now()
                     ]);
                 }
                 $data = [
-                    'title' =>translate('messages.order_placed_successfully'),
+                    'title' => translate('messages.order_placed_successfully'),
                     'description' => translate('messages.new_order_push_description'),
                     'order_id' => $order->id,
                     'image' => '',
-                    'type'=>'order_status',
+                    'type' => 'order_status',
                 ];
                 Helpers::send_push_notif_to_device($order->store->vendor->firebase_token, $data);
                 DB::table('user_notifications')->insert([
-                    'data'=> json_encode($data),
-                    'vendor_id'=>$order->store->vendor_id,
-                    'created_at'=>now(),
-                    'updated_at'=>now()
+                    'data' => json_encode($data),
+                    'vendor_id' => $order->store->vendor_id,
+                    'created_at' => now(),
+                    'updated_at' => now()
                 ]);
             } catch (\Exception $e) {
             }
@@ -123,11 +130,10 @@ class MercadoPagoController extends Controller
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_HTTPHEADER, array(
             'Content-Type: application/json',
-            'Authorization: Bearer '.$this->data['access_token']
+            'Authorization: Bearer ' . $this->data['access_token']
         ));
         curl_setopt($curl, CURLOPT_POSTFIELDS, '{"site_id":"MLA"}');
         $response = curl_exec($curl);
         dd($response);
-
     }
 }
