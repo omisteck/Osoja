@@ -25,6 +25,7 @@ use Grimzy\LaravelMysqlSpatial\Types\Point;
 use Stripe\Product;
 use App\Models\Refund;
 use App\Models\RefundReason;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -57,6 +58,7 @@ class OrderController extends Controller
 
     public function place_order(Request $request)
     {
+        Log::info($request);
         $validator = Validator::make($request->all(), [
             'order_amount' => 'required',
             'payment_method' => 'required|in:cash_on_delivery,digital_payment,wallet',
@@ -576,7 +578,10 @@ class OrderController extends Controller
             $customer->save();
             if ($request->payment_method == 'wallet') CustomerLogic::create_wallet_transaction($order->user_id, $order->order_amount, 'order_place', $order->id);
             DB::commit();
-            Helpers::send_order_notification($order);
+            if ($request->header('moduleId') != 1) {
+                Helpers::send_order_notification($order);
+            }
+
             //PlaceOrderMail
             try {
                 if ($order->order_status == 'pending' && config('mail.status')) {

@@ -20,7 +20,7 @@ class FlutterwaveController extends Controller
     {
         //This generates a payment reference
         $reference = Flutterwave::generateReference();
-        $order = Order::with(['details','customer'])->where(['id' => $request->order_id, 'user_id'=>$request->customer_id])->first();
+        $order = Order::with(['details', 'customer'])->where(['id' => $request->order_id, 'user_id' => $request->customer_id])->first();
         $user_data = $order->customer;
         // Enter the details of the payment
         $data = [
@@ -29,15 +29,15 @@ class FlutterwaveController extends Controller
             'email' => $user_data['email'],
             'tx_ref' => $reference,
             'currency' => Helpers::currency_code(),
-            'redirect_url' => route('flutterwave_callback',['order_id'=>$order->id]),
+            'redirect_url' => route('flutterwave_callback', ['order_id' => $order->id]),
             'customer' => [
                 'email' => $user_data['email'],
                 "phone_number" => $user_data['phone'],
-                "name" => $user_data['f_name'].''.$user_data['l_name']
+                "name" => $user_data['f_name'] . '' . $user_data['l_name']
             ],
 
             "customizations" => [
-                "title" => BusinessSetting::where(['key'=>'business_name'])->first()->value??'Osojapa',
+                "title" => BusinessSetting::where(['key' => 'business_name'])->first()->value ?? 'Osojapa',
                 "description" => $order->id,
             ]
         ];
@@ -50,12 +50,11 @@ class FlutterwaveController extends Controller
             $order->save();
             if ($order->callback != null) {
                 return redirect($order->callback . '&status=fail');
-            }else{
+            } else {
                 return \redirect()->route('payment-fail');
             }
         }
         return redirect($payment['data']['link']);
-
     }
 
     /**
@@ -67,7 +66,7 @@ class FlutterwaveController extends Controller
 
         $order = Order::with(['details'])->where(['id' => $order_id])->first();
 
-        if (in_array($request->status, ['successful','completed'])) {
+        if (in_array($request->status, ['successful', 'completed'])) {
 
             $transactionID = Flutterwave::getTransactionIDFromCallback();
             $data = Flutterwave::verifyTransaction($transactionID);
@@ -79,26 +78,29 @@ class FlutterwaveController extends Controller
                 $order->order_status = 'confirmed';
                 $order->confirmed = now();
                 $order->save();
-                Helpers::send_order_notification($order);
+
+                if ($order->module_id != 1) {
+                    Helpers::send_order_notification($order);
+                }
             } catch (\Exception $e) {
             }
 
             if ($order->callback != null) {
                 return redirect($order->callback . '&status=success');
-            }else{
+            } else {
                 return \redirect()->route('payment-success');
             }
         }
         // elseif ($status ==  'cancelled'){
         //     //Put desired action/code after transaction has been cancelled here
         // }
-        else{
+        else {
             $order->order_status = 'failed';
             $order->failed = now();
             $order->save();
             if ($order->callback != null) {
                 return redirect($order->callback . '&status=fail');
-            }else{
+            } else {
                 return \redirect()->route('payment-fail');
             }
         }

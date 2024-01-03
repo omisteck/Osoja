@@ -2501,4 +2501,5 @@
                                             submit.Make sure the phone numbers and email addresses are unique.',
   'Logistics' => 'Logistics',
   'Groceries' => 'Groceries',
+  'Order Type' => 'Order Type',
 );

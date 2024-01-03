@@ -321,6 +321,7 @@ class OrderController extends Controller
 
     public function status(Request $request)
     {
+
         $order = Order::with(['details', 'store' => function ($query) {
             return $query->withCount('orders');
         }, 'details.item' => function ($query) {
@@ -333,6 +334,7 @@ class OrderController extends Controller
             Toastr::warning(translate('messages.you_can_not_change_the_status_of_a_completed_order'));
             return back();
         }
+
         if (in_array($order->order_status, ['refund_requested']) && BusinessSetting::where(['key' => 'refund_active_status'])->first()->value == false) {
             Toastr::warning(translate('Refund Option is not active. Please active it from Refund Settings'));
             return back();

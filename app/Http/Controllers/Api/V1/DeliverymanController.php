@@ -112,7 +112,12 @@ class DeliverymanController extends Controller
     {
         $dm = DeliveryMan::where(['auth_token' => $request['token']])->first();
         $orders = Order::with(['customer', 'store', 'parcel_category'])
-            ->whereIn('order_status', ['accepted', 'confirmed', 'pending', 'processing', 'picked_up', 'handover'])
+            ->where(function ($query) {
+                $query->where('module_id', '!=', 1)->whereIn('order_status', ['accepted', 'confirmed', 'pending', 'processing', 'picked_up', 'handover']);
+            })
+            ->orWhere(function ($query) {
+                $query->where('module_id', 1)->whereIn('order_status', ['accepted', 'processing', 'picked_up', 'handover']);
+            })
             ->where(['delivery_man_id' => $dm['id']])
             ->orderBy('accepted')
             ->orderBy('schedule_at', 'desc')
@@ -140,11 +145,19 @@ class DeliverymanController extends Controller
         }
 
         if (config('order_confirmation_model') == 'deliveryman' && $dm->type == 'zone_wise') {
-            $orders = $orders->whereIn('order_status', ['pending', 'confirmed', 'processing', 'handover']);
+            $orders = $orders->where(function ($query) {
+                $query->where('module_id', '!=', 1)->whereIn('order_status', ['pending', 'confirmed', 'processing', 'handover']);
+            })
+                ->orWhere(function ($query) {
+                    $query->where('module_id', 1)->whereIn('order_status', ['processing', 'picked_up', 'handover']);
+                });
         } else {
             $orders = $orders->where(function ($query) {
-                $query->whereIn('order_status', ['confirmed', 'processing', 'handover'])->orWhere('order_type', 'parcel');
-            });
+                $query->where('module_id', '!=', 1)->whereIn('order_status', ['confirmed', 'processing', 'handover'])->orWhere('order_type','parcel');
+            })
+                ->orWhere(function ($query) {
+                    $query->where('module_id', 1)->whereIn('order_status', ['processing', 'picked_up', 'handover']);
+                });
         }
 
         $orders = $orders->dmOrder()
