@@ -1,4 +1,4 @@
-<?php return array (
+<?php return array(
   'alert_store_out_from_campaign' => 'You want your store out from this campaign?',
   'alert_store_join_campaign' => 'You want join this campaign?',
   'about_us' => 'About Us',
